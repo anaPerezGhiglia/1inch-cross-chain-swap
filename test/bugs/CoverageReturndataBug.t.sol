@@ -37,11 +37,13 @@ contract InlineForwarder {
     }
 }
 
-/// @notice Reproduces a Hardhat 3 coverage bug where returndatasize() returns 0
-/// inside inline assembly after a failed .call().
+/// @notice Reproduces a Hardhat 3 coverage bug where coverage instrumentation
+/// injects calls to 0xc0bEc0BEc0BeC0bEC0beC0bEC0bEC0beC0beC0BE inside library
+/// functions, overwriting the EVM returndata buffer. This causes returndatasize()
+/// to return stale data instead of the original revert reason.
 ///
-/// All tests pass without --coverage but may fail with --coverage due to
-/// coverage instrumentation resetting the returndata buffer.
+/// The library variant (LibForwarder) FAILS under --coverage.
+/// The inline variant (InlineForwarder) PASSES under --coverage.
 ///
 /// Related real-world failures:
 ///   - IntegrationResolverMockTest#test_MockPublicWithdrawDst()
@@ -58,7 +60,8 @@ contract CoverageReturndataBugTest is Test {
         inlineForwarder = new InlineForwarder();
     }
 
-    /// @notice Uses RevertReasonForwarder library (same as production code).
+    /// @notice FAILS under --coverage. Uses RevertReasonForwarder library — coverage
+    /// injects a call to 0xc0bE..c0BE at the library function entry, overwriting returndata.
     function test_RevertDataPreservedThroughLibraryForward() public {
         vm.expectRevert(CustomError.selector);
         libForwarder.forward(
@@ -67,7 +70,8 @@ contract CoverageReturndataBugTest is Test {
         );
     }
 
-    /// @notice Uses inline assembly (same logic, no library).
+    /// @notice PASSES under --coverage. Same logic inlined — no library boundary
+    /// means no instrumentation call between .call() and returndatacopy.
     function test_RevertDataPreservedThroughInlineForward() public {
         vm.expectRevert(CustomError.selector);
         inlineForwarder.forward(
