@@ -28,7 +28,7 @@
     "test": "FOUNDRY_PROFILE=default forge snapshot --no-match-test \"testFuzz_*\"",
     "test-hardhat": "FOUNDRY_PROFILE=default npx hardhat test solidity",
     "build-hardhat": "npx hardhat compile",
-    "coverage-hardhat": "npx hardhat test solidity --coverage",
+    "coverage-hardhat": "FOUNDRY_PROFILE=default npx hardhat test solidity --coverage",
     "test:lite": "FOUNDRY_PROFILE=lite forge test -vvv",
     "test:zksync": "FOUNDRY_PROFILE=zksync forge test -vvv --zksync --force",
     "postinstall": "forge install"

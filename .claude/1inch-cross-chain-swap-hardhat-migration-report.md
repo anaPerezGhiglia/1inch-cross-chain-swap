@@ -12,7 +12,7 @@
 
 - 🚩 zkSync compilation & testing — 6 contracts (~22% of codebase) cannot be tested under Hardhat; requires Matter Labs' foundry-zksync fork
 - 🚩 No equivalent for `forge snapshot` — gas snapshot workflow unavailable ([#7769](https://github.com/NomicFoundation/hardhat/issues/7769))
-- 🚩 No equivalent for `forge coverage --ir-minimum` — coverage may require workaround for via-IR projects
+- 🟡 Code coverage — 3/94 tests fail only under `--coverage` (revert data lost during instrumentation); via-IR works natively
 
 ## 1. Test Count Comparison
 
@@ -33,8 +33,8 @@
 |---|---|---|---|
 | zkSync compilation & testing (`--zksync`, `[profile.zksync]`) | 🚩 **Gap** | **High** — 6 contracts (~22% of codebase) in `contracts/zkSync/` cannot be compiled with zkSync semantics or tested under Hardhat 3. All 94 tests are designed to run against both EVM and zkSync paths via `FOUNDRY_PROFILE` switching, but only the EVM path is exercised under Hardhat. CI `test-zksync` job, `test:zksync` and `coverage:zksync` scripts have no Hardhat equivalent. | No tracking issue found — requires Matter Labs' `foundry-zksync` fork. Forge must be retained for zkSync testing. Hardhat's [zkSync plugin ecosystem](https://docs.zksync.io/build/tooling/hardhat) targets HH2, not HH3. |
 | Gas snapshots (`forge snapshot`) | 🚩 **Gap** | **Medium** — `test` script uses `forge snapshot`; no snapshot comparison in CI | [#7769](https://github.com/NomicFoundation/hardhat/issues/7769) — no workaround currently |
-| `forge coverage --ir-minimum` | 🚩 **Gap** | **Medium** — coverage script relies on `--ir-minimum` flag for via-IR projects | Hardhat 3 `--coverage` is built-in but has no `--ir-minimum` equivalent; may need testing |
 | Gas reports (`forge test --gas-report`) | 🚩 **Gap** | **Low** — gas report target filtering (`gas_reports` in foundry.toml) not available | HH2 community plugin [`hardhat-gas-reporter`](https://www.npmjs.com/package/hardhat-gas-reporter) exists but requires `hardhat ^2.16.0` — no HH3 support yet. `gasreport` script cannot be migrated. |
+| Code coverage (`forge coverage`) | 🟡 **Partial** | **Medium** — 91/94 tests pass under `--coverage`; 3 tests fail with `call reverted as expected, but without data` (they pass without coverage). Via-IR compilation works natively — no `--ir-minimum` equivalent needed. | Coverage instrumentation appears to strip revert data from some `vm.expectRevert` assertions. The 3 failing tests use `vm.expectRevert` on calls that revert with custom errors. Consider filing on [NomicFoundation/hardhat](https://github.com/NomicFoundation/hardhat/issues). |
 | `forge doc` | 🟡 **Partial** | **Low** — documentation generation script cannot run via Hardhat | Community plugin [`@solarity/hardhat-markup`](https://www.npmjs.com/package/@solarity/hardhat-markup) supports HH3 |
 | Etherscan verification | 🟡 **Partial** | **Low** — not configured in foundry.toml but project has deploy scripts | `@nomicfoundation/hardhat-verify` available if needed |
 
@@ -84,6 +84,5 @@ Added `"type": "module"` to `package.json` as required by Hardhat 3. The project
 ## 4. Next Steps
 
 1. **Retain Forge for zkSync testing** — Hardhat 3 cannot replace Forge for zkSync compilation or testing. The `test:zksync` and `coverage:zksync` scripts must continue using Matter Labs' `foundry-zksync` fork. Both toolchains will need to coexist long-term unless Hardhat's zkSync plugin ecosystem adds HH3 support. (High impact — 6 contracts, ~22% of codebase untestable under Hardhat)
-2. **Validate `--coverage` with via-IR** — run `npx hardhat test solidity --coverage` and verify it works for this via-IR project. Forge's `--ir-minimum` flag avoids full IR compilation for coverage; Hardhat may need different handling. (Medium impact — coverage workflow)
+2. **Investigate coverage test failures** — 3 tests fail under `--coverage` with `call reverted as expected, but without data`. These pass without coverage. May be worth filing on [NomicFoundation/hardhat](https://github.com/NomicFoundation/hardhat/issues) if this is a known instrumentation issue.
 3. **Evaluate gas snapshot alternative** — if gas regression detection is needed in CI, consider a custom script that parses Hardhat gas reporter output. ([#7769](https://github.com/NomicFoundation/hardhat/issues/7769))
-4. **File upstream feature request for `--ir-minimum`** — if coverage doesn't work with via-IR, consider filing an issue on [NomicFoundation/hardhat](https://github.com/NomicFoundation/hardhat/issues).
