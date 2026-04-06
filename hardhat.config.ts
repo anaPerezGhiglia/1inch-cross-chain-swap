@@ -58,8 +58,8 @@ export default defineConfig({
     },
   },
   // TODO: gas_reports — no Hardhat equivalent for forge test --gas-report target filtering
-  // TODO: forge snapshot — not supported. See: https://github.com/NomicFoundation/hardhat/issues/7769
-  // TODO: forge doc — Foundry-only; community plugin @solarity/hardhat-markup is an alternative
+  // Gas snapshots: supported via --snapshot / --snapshot-check CLI flags (Hardhat 3.3.0+)
+  // TODO: forge doc — Foundry-only; community plugin @solarity/hardhat-markup (HH3 compatible) is an alternative
   // Foundry-only settings not migrated:
   // - out = "out" — Hardhat uses artifacts/ + cache/
   // - libs = ["lib"] — Hardhat resolves via remappings.txt and Node.js resolution
