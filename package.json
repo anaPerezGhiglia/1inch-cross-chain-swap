@@ -32,7 +32,6 @@
     "snapshot-hardhat": "FOUNDRY_PROFILE=default npx hardhat test solidity --snapshot",
     "snapshot-check-hardhat": "FOUNDRY_PROFILE=default npx hardhat test solidity --snapshot-check",
     "test:lite": "FOUNDRY_PROFILE=lite forge test -vvv",
-    "test:zksync": "FOUNDRY_PROFILE=zksync forge test -vvv --zksync --force",
-    "postinstall": "forge install"
+    "test:zksync": "FOUNDRY_PROFILE=zksync forge test -vvv --zksync --force"
   }
 }
