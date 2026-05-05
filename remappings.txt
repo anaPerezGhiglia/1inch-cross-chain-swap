@@ -4,3 +4,9 @@
 solidity-utils/=lib/solidity-utils/
 limit-order-protocol/=lib/limit-order-protocol/
 limit-order-settlement/=lib/limit-order-settlement/
+forge-std/=lib/forge-std/src/
+openzeppelin-contracts/=lib/openzeppelin-contracts/
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+murky/=lib/murky/
+contracts/=./contracts/
+test/=./test/
