@@ -1,7 +1,7 @@
 # Hardhat 3 Migration Report: 1inch-cross-chain-swap
 
-**Hardhat version installed:** `^3.3.0`
-**Migration date:** 2026-04-06
+**Hardhat version installed:** `^3.4.4`
+**Migration date:** 2026-05-05
 **Foundry analysis:** [Foundry analysis](1inch-cross-chain-swap-foundry-migration-analysis.md)
 
 ---
@@ -11,7 +11,6 @@
 ### Notable gaps (non-blocking, medium+ impact)
 
 - 🚩 zkSync compilation & testing — 6 contracts (~22% of codebase) cannot be tested under Hardhat; requires Matter Labs' foundry-zksync fork
-- 🟡 Code coverage — 3/94 tests fail only under `--coverage` (revert data lost during instrumentation); via-IR works natively
 
 ## 1. Test Count Comparison
 
@@ -20,9 +19,10 @@
 | `function test*` declarations in `.t.sol` files | 94 |
 | Hardhat tests run | 94 |
 | Hardhat tests passing | 94 |
+| Hardhat tests passing under `--coverage` | 94 |
 | Tests commented out (UnsupportedCheatcode) | 0 |
 
-**No discrepancy.** All test functions were discovered and passed.
+**No discrepancy.** All test functions were discovered and passed, including under coverage instrumentation.
 
 ## 2. Feature Parity
 
@@ -30,11 +30,9 @@
 
 | Feature | Parity | Impact | Workaround / Notes |
 |---|---|---|---|
-| zkSync compilation & testing (`--zksync`, `[profile.zksync]`) | 🚩 **Gap** | **High** — 6 contracts (~22% of codebase) in `contracts/zkSync/` cannot be compiled with zkSync semantics or tested under Hardhat 3. All 94 tests are designed to run against both EVM and zkSync paths via `FOUNDRY_PROFILE` switching, but only the EVM path is exercised under Hardhat. CI `test-zksync` job, `test:zksync` and `coverage:zksync` scripts have no Hardhat equivalent. | No tracking issue found — requires Matter Labs' `foundry-zksync` fork. Forge must be retained for zkSync testing. `@matterlabs/hardhat-zksync` targets HH2 sub-plugins, not HH3. |
-| Gas reports (`forge test --gas-report`) | 🚩 **Gap** | **Low** — gas report target filtering (`gas_reports` in foundry.toml) not available | HH2 community plugin [`hardhat-gas-reporter`](https://www.npmjs.com/package/hardhat-gas-reporter) exists but requires `hardhat ^2.16.0` — no HH3 support yet. `gasreport` script cannot be migrated. |
-| Code coverage (`forge coverage`) | 🟡 **Partial** | **Medium** — 91/94 tests pass under `--coverage`; 3 fail (pass without coverage). Via-IR works natively — no `--ir-minimum` equivalent needed. | Coverage instrumentation bug in library functions using inline assembly `returndatasize()`. See [bug report & minimal repro](https://github.com/anaPerezGhiglia/repro-coverage-returndata-bug). |
+| zkSync compilation & testing (`--zksync`, `[profile.zksync]`) | 🚩 **Gap** | **High** — 6 contracts (~22% of codebase) in `contracts/zkSync/` cannot be compiled with zkSync semantics or tested under Hardhat 3. All 94 tests are designed to run against both EVM and zkSync paths via `FOUNDRY_PROFILE` switching, but only the EVM path is exercised under Hardhat. CI `test-zksync` job, `test:zksync` and `coverage:zksync` scripts have no Hardhat equivalent. | No tracking issue found — requires Matter Labs' `foundry-zksync` fork. Forge must be retained for zkSync testing. `@matterlabs/hardhat-zksync-solc` still declares `peerDependencies: hardhat ^2.22.5` — no HH3 support yet. |
+| Gas reports (`forge test --gas-report`) | 🚩 **Gap** | **Low** — gas report target filtering (`gas_reports` in foundry.toml) not available | HH2 community plugin [`hardhat-gas-reporter`](https://www.npmjs.com/package/hardhat-gas-reporter) still declares `peerDependencies: hardhat ^2.16.0` — no HH3 support yet. `gasreport` script cannot be migrated. |
 | Documentation generator (`forge doc`) | 🟡 **Partial** | **Low** — documentation generation script cannot run via Hardhat | Community plugin [`@solarity/hardhat-markup`](https://www.npmjs.com/package/@solarity/hardhat-markup) supports HH3 (`peerDependencies: hardhat ^3.0.0`) |
-| Etherscan verification | 🟡 **Partial** | **Low** — not configured in foundry.toml but project has deploy scripts | `@nomicfoundation/hardhat-verify` available if needed |
 
 ### Full parity
 
@@ -45,7 +43,8 @@ These features work equivalently in Hardhat 3:
 - Build profiles (`default`, `lite`)
 - forge-std cheatcodes (`vm.*`) — all used cheatcodes work
 - Fuzz testing (1024 runs)
-- Gas snapshots (`forge snapshot` → `npx hardhat test solidity --snapshot` / `--snapshot-check`) — resolved in Hardhat 3.3.0
+- Gas snapshots (`forge snapshot` → `npx hardhat test solidity --snapshot` / `--snapshot-check`)
+- Code coverage (`forge coverage` → `npx hardhat test solidity --coverage`) — 94/94 tests now pass under coverage in Hardhat 3.4.4 (previous returndata-buffer instrumentation bug appears resolved). Via-IR works natively without `--ir-minimum`.
 - `vm.envString` for environment variable reading
 - `fsPermissions` (read files and directories)
 - Remappings (git submodule deps, cross-submodule imports, absolute imports)
@@ -54,7 +53,7 @@ These features work equivalently in Hardhat 3:
 
 - Invariant testing — no invariant tests present
 - Network configuration / RPC endpoints — no `[rpc_endpoints]` in foundry.toml
-- Contract verification — no `[etherscan]` section in foundry.toml
+- Etherscan verification — no `[etherscan]` section in foundry.toml; `@nomicfoundation/hardhat-verify` is available if needed in the future
 - Deployment scripting (`forge script` / `.s.sol`) — project uses shell scripts instead
 - Inline test config — no `forge-config:` directives in test files
 
@@ -76,7 +75,7 @@ Five remappings were added to the root `remappings.txt`:
 
 ### Environment variable for test script
 
-The `test-hardhat` script sets `FOUNDRY_PROFILE=default` because `BaseSetup.setUp()` calls `vm.envString("FOUNDRY_PROFILE")` to detect the zkSync profile. Without this env var, all tests fail with `vm.envString: environment variable "FOUNDRY_PROFILE" not found`.
+The `test-hardhat` script (and `coverage-hardhat`, `snapshot-hardhat`, `snapshot-check-hardhat`) sets `FOUNDRY_PROFILE=default` because `BaseSetup.setUp()` calls `vm.envString("FOUNDRY_PROFILE")` to detect the zkSync profile. Without this env var, all tests fail with `vm.envString: environment variable "FOUNDRY_PROFILE" not found`.
 
 ### ESM migration
 
@@ -85,5 +84,6 @@ Added `"type": "module"` to `package.json` as required by Hardhat 3. The project
 ## 4. Next Steps
 
 1. **Retain Forge for zkSync testing** — Hardhat 3 cannot replace Forge for zkSync compilation or testing. The `test:zksync` and `coverage:zksync` scripts must continue using Matter Labs' `foundry-zksync` fork. Both toolchains will need to coexist long-term unless `@matterlabs/hardhat-zksync` adds HH3 support. (High impact — 6 contracts, ~22% of codebase untestable under Hardhat)
-2. **File upstream coverage bug** — 3 tests fail under `--coverage` because coverage instrumentation injects calls that overwrite the EVM returndata buffer inside library functions using inline assembly (`returndatasize` / `returndatacopy`). Bug report and minimal repro at [anaPerezGhiglia/repro-coverage-returndata-bug](https://github.com/anaPerezGhiglia/repro-coverage-returndata-bug). Consider filing on [NomicFoundation/hardhat](https://github.com/NomicFoundation/hardhat/issues).
-3. **Adopt gas snapshots in CI** — `--snapshot` and `--snapshot-check` are now available (Hardhat 3.3.0). The `snapshot-hardhat` and `snapshot-check-hardhat` scripts have been added to `package.json` and verified working. Integrate into CI to detect gas regressions.
+2. **Adopt coverage in CI** — Coverage now passes cleanly in Hardhat 3.4.4 (94/94 tests). The previously documented returndata-buffer instrumentation bug (3 tests failing) no longer reproduces. Wire `coverage-hardhat` into CI to keep parity with Forge's `coverage` job.
+3. **Adopt gas snapshots in CI** — `--snapshot` and `--snapshot-check` are verified working. Integrate the `snapshot-hardhat` and `snapshot-check-hardhat` scripts into CI to detect gas regressions.
+4. **Track HH3 plugin support** — Watch `hardhat-gas-reporter` and `@matterlabs/hardhat-zksync-solc` peerDependencies for HH3 compatibility. Until then, `gasreport`, `test:zksync`, and `coverage:zksync` must stay on Forge.

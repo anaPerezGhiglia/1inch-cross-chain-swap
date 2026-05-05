@@ -10,7 +10,7 @@
   "license": "MIT",
   "devDependencies": {
     "eslint": "8.56.0",
-    "hardhat": "^3.3.0",
+    "hardhat": "^3.4.4",
     "rimraf": "5.0.5",
     "solc": "0.8.23",
     "solhint": "5.0.1"
